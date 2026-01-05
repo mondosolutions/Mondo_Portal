@@ -130,7 +130,7 @@ router.post('/login',
       ).run(user.id, token, expiresAt.toISOString());
 
       // Clean up expired sessions
-      db.prepare('DELETE FROM sessions WHERE expires_at < datetime("now")').run();
+      db.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run();
 
       res.json({
         success: true,
