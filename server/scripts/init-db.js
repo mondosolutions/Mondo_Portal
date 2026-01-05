@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-const { db, initializeDatabase } = require('../config/database');
 
-// Ensure data directory exists
+// Ensure data directory exists BEFORE loading the database module
 const dataDir = path.join(__dirname, '..', '..', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
+
+const { db, initializeDatabase } = require('../config/database');
 
 // Initialize database
 console.log('Initializing database...');
