@@ -10,7 +10,7 @@ router.get('/overview', (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Total revenue
+    // Total revenue from transactions
     const revenueResult = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
@@ -24,27 +24,156 @@ router.get('/overview', (req, res) => {
       WHERE user_id = ?
     `).get(userId);
 
-    // Active projects
-    const projectsResult = db.prepare(`
-      SELECT COUNT(*) as total
+    // Project stats
+    const projectStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        COALESCE(AVG(progress), 0) as avg_progress
       FROM projects
-      WHERE user_id = ? AND status = 'active'
+      WHERE user_id = ?
     `).get(userId);
 
-    // Pending tasks (using calendar events as tasks)
-    const tasksResult = db.prepare(`
-      SELECT COUNT(*) as total
+    // Task stats
+    const taskStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN t.status = 'todo' THEN 1 ELSE 0 END) as todo,
+        SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+        SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN t.status != 'completed' AND t.due_date < datetime('now') THEN 1 ELSE 0 END) as overdue
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+      WHERE p.user_id = ?
+    `).get(userId);
+
+    // Client stats
+    const clientStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
+      FROM clients
+      WHERE user_id = ?
+    `).get(userId);
+
+    // Invoice stats
+    const invoiceStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        COALESCE(SUM(total), 0) as total_value,
+        COALESCE(SUM(amount_paid), 0) as total_paid,
+        COALESCE(SUM(total - amount_paid), 0) as outstanding,
+        SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
+        SUM(CASE WHEN status = 'sent' OR status = 'partial' THEN 1 ELSE 0 END) as pending_count,
+        SUM(CASE WHEN status != 'paid' AND status != 'draft' AND due_date < date('now') THEN 1 ELSE 0 END) as overdue_count,
+        COALESCE(SUM(CASE WHEN status != 'paid' AND status != 'draft' AND due_date < date('now') THEN (total - amount_paid) ELSE 0 END), 0) as overdue_amount
+      FROM invoices
+      WHERE user_id = ?
+    `).get(userId);
+
+    // Time tracking stats (this month)
+    const timeStats = db.prepare(`
+      SELECT
+        COALESCE(SUM(hours), 0) as total_hours,
+        COALESCE(SUM(CASE WHEN billable = 1 THEN hours ELSE 0 END), 0) as billable_hours,
+        COALESCE(SUM(CASE WHEN billable = 1 THEN hours * hourly_rate ELSE 0 END), 0) as billable_revenue
+      FROM time_entries
+      WHERE user_id = ? AND date >= date('now', 'start of month')
+    `).get(userId);
+
+    // Expense stats (this month)
+    const expenseStats = db.prepare(`
+      SELECT
+        COALESCE(SUM(amount), 0) as total,
+        COALESCE(SUM(CASE WHEN billable = 1 THEN amount ELSE 0 END), 0) as billable,
+        COALESCE(SUM(CASE WHEN billable = 0 THEN amount ELSE 0 END), 0) as non_billable,
+        COUNT(*) as count
+      FROM expenses
+      WHERE user_id = ? AND date >= date('now', 'start of month')
+    `).get(userId);
+
+    // Notification stats
+    const notificationStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread
+      FROM notifications
+      WHERE user_id = ?
+    `).get(userId);
+
+    // Upcoming events (next 7 days)
+    const upcomingEvents = db.prepare(`
+      SELECT COUNT(*) as count
       FROM calendar_events
-      WHERE user_id = ? AND start >= datetime('now')
+      WHERE user_id = ?
+        AND start >= datetime('now')
+        AND start <= datetime('now', '+7 days')
+    `).get(userId);
+
+    // Recent activity (milestones)
+    const upcomingMilestones = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM milestones m
+      JOIN projects p ON m.project_id = p.id
+      WHERE p.user_id = ?
+        AND m.status = 'pending'
+        AND m.due_date <= date('now', '+14 days')
     `).get(userId);
 
     res.json({
       success: true,
       stats: {
-        revenue: revenueResult.total,
-        transactions: transactionsResult.total,
-        projects: projectsResult.total,
-        tasks: tasksResult.total
+        revenue: {
+          total: revenueResult.total,
+          transactions: transactionsResult.total
+        },
+        projects: {
+          total: projectStats.total || 0,
+          active: projectStats.active || 0,
+          completed: projectStats.completed || 0,
+          avg_progress: Math.round(projectStats.avg_progress || 0)
+        },
+        tasks: {
+          total: taskStats.total || 0,
+          todo: taskStats.todo || 0,
+          in_progress: taskStats.in_progress || 0,
+          completed: taskStats.completed || 0,
+          overdue: taskStats.overdue || 0
+        },
+        clients: {
+          total: clientStats.total || 0,
+          active: clientStats.active || 0
+        },
+        invoices: {
+          total: invoiceStats.total || 0,
+          total_value: invoiceStats.total_value || 0,
+          total_paid: invoiceStats.total_paid || 0,
+          outstanding: invoiceStats.outstanding || 0,
+          paid_count: invoiceStats.paid_count || 0,
+          pending_count: invoiceStats.pending_count || 0,
+          overdue_count: invoiceStats.overdue_count || 0,
+          overdue_amount: invoiceStats.overdue_amount || 0
+        },
+        time: {
+          total_hours: timeStats.total_hours || 0,
+          billable_hours: timeStats.billable_hours || 0,
+          billable_revenue: timeStats.billable_revenue || 0
+        },
+        expenses: {
+          total: expenseStats.total || 0,
+          billable: expenseStats.billable || 0,
+          non_billable: expenseStats.non_billable || 0,
+          count: expenseStats.count || 0
+        },
+        notifications: {
+          total: notificationStats.total || 0,
+          unread: notificationStats.unread || 0
+        },
+        upcoming: {
+          events: upcomingEvents.count || 0,
+          milestones: upcomingMilestones.count || 0
+        }
       }
     });
   } catch (error) {

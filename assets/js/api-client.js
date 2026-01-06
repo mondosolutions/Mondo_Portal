@@ -275,6 +275,297 @@
           method: 'DELETE'
         });
       }
+    },
+
+    // Projects
+    projects: {
+      getAll: async function(filters = {}) {
+        let url = '/projects';
+        const params = new URLSearchParams();
+        if (filters.client_id) params.append('client_id', filters.client_id);
+        if (filters.status) params.append('status', filters.status);
+        if (filters.priority) params.append('priority', filters.priority);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/projects/${id}`);
+      },
+      create: async function(project) {
+        return await apiRequest('/projects', {
+          method: 'POST',
+          body: JSON.stringify(project)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/projects/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/projects/${id}`, {
+          method: 'DELETE'
+        });
+      },
+      getStats: async function(id) {
+        return await apiRequest(`/projects/${id}/stats`);
+      },
+      getMembers: async function(id) {
+        return await apiRequest(`/projects/${id}/members`);
+      },
+      addMember: async function(id, userId, role) {
+        return await apiRequest(`/projects/${id}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ user_id: userId, role })
+        });
+      },
+      removeMember: async function(id, userId) {
+        return await apiRequest(`/projects/${id}/members/${userId}`, {
+          method: 'DELETE'
+        });
+      }
+    },
+
+    // Tasks
+    tasks: {
+      getAll: async function(filters = {}) {
+        let url = '/tasks';
+        const params = new URLSearchParams();
+        if (filters.project_id) params.append('project_id', filters.project_id);
+        if (filters.status) params.append('status', filters.status);
+        if (filters.priority) params.append('priority', filters.priority);
+        if (filters.assigned_to) params.append('assigned_to', filters.assigned_to);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/tasks/${id}`);
+      },
+      create: async function(task) {
+        return await apiRequest('/tasks', {
+          method: 'POST',
+          body: JSON.stringify(task)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/tasks/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/tasks/${id}`, {
+          method: 'DELETE'
+        });
+      },
+      updateStatus: async function(id, status) {
+        return await apiRequest(`/tasks/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        });
+      },
+      reorder: async function(taskIds) {
+        return await apiRequest('/tasks/reorder', {
+          method: 'POST',
+          body: JSON.stringify({ task_ids: taskIds })
+        });
+      },
+      addComment: async function(id, comment) {
+        return await apiRequest(`/tasks/${id}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({ comment })
+        });
+      },
+      getComments: async function(id) {
+        return await apiRequest(`/tasks/${id}/comments`);
+      }
+    },
+
+    // Clients
+    clients: {
+      getAll: async function(status = null) {
+        let url = '/clients';
+        if (status) url += `?status=${status}`;
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/clients/${id}`);
+      },
+      create: async function(client) {
+        return await apiRequest('/clients', {
+          method: 'POST',
+          body: JSON.stringify(client)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/clients/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/clients/${id}`, {
+          method: 'DELETE'
+        });
+      },
+      getProjects: async function(id) {
+        return await apiRequest(`/clients/${id}/projects`);
+      },
+      getInvoices: async function(id) {
+        return await apiRequest(`/clients/${id}/invoices`);
+      }
+    },
+
+    // Invoices
+    invoices: {
+      getAll: async function(filters = {}) {
+        let url = '/invoices';
+        const params = new URLSearchParams();
+        if (filters.client_id) params.append('client_id', filters.client_id);
+        if (filters.project_id) params.append('project_id', filters.project_id);
+        if (filters.status) params.append('status', filters.status);
+        if (filters.start_date) params.append('start_date', filters.start_date);
+        if (filters.end_date) params.append('end_date', filters.end_date);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/invoices/${id}`);
+      },
+      create: async function(invoice) {
+        return await apiRequest('/invoices', {
+          method: 'POST',
+          body: JSON.stringify(invoice)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/invoices/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/invoices/${id}`, {
+          method: 'DELETE'
+        });
+      },
+      updateStatus: async function(id, status) {
+        return await apiRequest(`/invoices/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        });
+      },
+      addPayment: async function(id, payment) {
+        return await apiRequest(`/invoices/${id}/payments`, {
+          method: 'POST',
+          body: JSON.stringify(payment)
+        });
+      },
+      getPayments: async function(id) {
+        return await apiRequest(`/invoices/${id}/payments`);
+      }
+    },
+
+    // Time Entries
+    timeEntries: {
+      getAll: async function(filters = {}) {
+        let url = '/time-entries';
+        const params = new URLSearchParams();
+        if (filters.project_id) params.append('project_id', filters.project_id);
+        if (filters.task_id) params.append('task_id', filters.task_id);
+        if (filters.billable !== undefined) params.append('billable', filters.billable);
+        if (filters.start_date) params.append('start_date', filters.start_date);
+        if (filters.end_date) params.append('end_date', filters.end_date);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/time-entries/${id}`);
+      },
+      create: async function(entry) {
+        return await apiRequest('/time-entries', {
+          method: 'POST',
+          body: JSON.stringify(entry)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/time-entries/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/time-entries/${id}`, {
+          method: 'DELETE'
+        });
+      }
+    },
+
+    // Expenses
+    expenses: {
+      getAll: async function(filters = {}) {
+        let url = '/expenses';
+        const params = new URLSearchParams();
+        if (filters.project_id) params.append('project_id', filters.project_id);
+        if (filters.client_id) params.append('client_id', filters.client_id);
+        if (filters.category) params.append('category', filters.category);
+        if (filters.billable !== undefined) params.append('billable', filters.billable);
+        if (filters.start_date) params.append('start_date', filters.start_date);
+        if (filters.end_date) params.append('end_date', filters.end_date);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      get: async function(id) {
+        return await apiRequest(`/expenses/${id}`);
+      },
+      create: async function(expense) {
+        return await apiRequest('/expenses', {
+          method: 'POST',
+          body: JSON.stringify(expense)
+        });
+      },
+      update: async function(id, updates) {
+        return await apiRequest(`/expenses/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates)
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/expenses/${id}`, {
+          method: 'DELETE'
+        });
+      },
+      getCategories: async function() {
+        return await apiRequest('/expenses/meta/categories');
+      }
+    },
+
+    // Notifications
+    notifications: {
+      getAll: async function(filters = {}) {
+        let url = '/notifications';
+        const params = new URLSearchParams();
+        if (filters.is_read !== undefined) params.append('is_read', filters.is_read);
+        if (filters.limit) params.append('limit', filters.limit);
+        if (params.toString()) url += '?' + params.toString();
+        return await apiRequest(url);
+      },
+      markAsRead: async function(id) {
+        return await apiRequest(`/notifications/${id}/read`, {
+          method: 'PATCH'
+        });
+      },
+      markAllAsRead: async function() {
+        return await apiRequest('/notifications/mark-all-read', {
+          method: 'POST'
+        });
+      },
+      delete: async function(id) {
+        return await apiRequest(`/notifications/${id}`, {
+          method: 'DELETE'
+        });
+      }
     }
   };
 

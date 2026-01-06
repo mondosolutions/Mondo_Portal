@@ -12,6 +12,13 @@ const calendarRoutes = require('./routes/calendar');
 const transactionRoutes = require('./routes/transactions');
 const emailRoutes = require('./routes/email');
 const settingsRoutes = require('./routes/settings');
+const projectsRoutes = require('./routes/projects');
+const tasksRoutes = require('./routes/tasks');
+const clientsRoutes = require('./routes/clients');
+const invoicesRoutes = require('./routes/invoices');
+const timeEntriesRoutes = require('./routes/time-entries');
+const expensesRoutes = require('./routes/expenses');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -34,6 +41,13 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/projects', projectsRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/clients', clientsRoutes);
+app.use('/api/invoices', invoicesRoutes);
+app.use('/api/time-entries', timeEntriesRoutes);
+app.use('/api/expenses', expensesRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '..')));
