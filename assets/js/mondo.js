@@ -29,7 +29,7 @@ const disableDarkMode = () => {
     changeCSS('assets/css/bootstrap.min.css', 'assets/css/bootstrap-dark.min.css'); 
     changeCSS('assets/css/app.min.css', 'assets/css/app-dark.min.css'); 
     // 2. update darkMode in localStorage
-        localStorage.setItem('darkMode', null);
+    localStorage.removeItem('darkMode');
 }
 
 if(darkMode === 'enabled'){
